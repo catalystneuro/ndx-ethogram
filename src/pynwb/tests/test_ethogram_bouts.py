@@ -107,3 +107,22 @@ def test_observation_intervals_link_roundtrip(tmp_path):
         assert rb.observation_intervals is not None
         assert len(rb.observation_intervals) == 2
         assert rb.observation_intervals["stop_time"][0] == 10.0
+
+
+def test_bout_concurrency_roundtrip(tmp_path):
+    """`bout_concurrency` records how the bouts of one subject relate in time."""
+    nwbfile = mock_NWBFile()
+    bouts = make_bouts()
+    bouts.bout_concurrency = "partition"
+    nwbfile.create_processing_module("behavior", "behavior").add(bouts)
+    path = str(tmp_path / "bb.nwb")
+
+    write_nwb(nwbfile, path)
+    with NWBHDF5IO(path, mode="r", load_namespaces=True) as io:
+        rb = io.read().processing["behavior"]["VAME_motifs"]
+        assert rb.bout_concurrency == "partition"
+
+
+def test_bout_concurrency_absent_means_unknown():
+    bouts = make_bouts()
+    assert bouts.bout_concurrency is None

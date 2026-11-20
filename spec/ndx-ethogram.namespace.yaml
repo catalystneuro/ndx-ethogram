@@ -4,23 +4,26 @@ namespaces:
   contact:
   - h.mayorquin@gmail.com
   doc: 'NWB extension for ethograms: a tool-agnostic behavior timeline (EthogramBouts,
-    labeled time intervals, one row per bout, a TimeIntervals subclass) plus the behavior
-    catalogue / coding scheme it draws labels from (Ethogram, a DynamicTable). Produced
-    from pose-estimation post-processing tools (VAME, keypoint-MoSeq, B-SOiD, DeepEthogram,
-    SimBA) and manual coders (CalMS21, CRIM13).'
+    labeled time intervals, one row per bout, a TimeIntervals subclass), the record
+    of a manual scoring (EthogramEvents, one row per scored occurrence, an EventsTable
+    subclass), and the behavior catalogue / coding scheme both draw labels from (Ethogram,
+    a DynamicTable). Produced from pose-estimation post-processing tools (VAME, keypoint-MoSeq,
+    B-SOiD, DeepEthogram, SimBA) and manual coders (BORIS, CalMS21, CRIM13).'
   name: ndx-ethogram
   schema:
   - namespace: core
     neurodata_types:
     - TimeIntervals
+    - EventsTable
     - ImageSeries
     - NWBDataInterface
   - namespace: hdmf-common
     neurodata_types:
     - VectorData
+    - VectorIndex
     - DynamicTable
   - namespace: ndx-pose
     neurodata_types:
     - PoseEstimation
   - source: ndx-ethogram.extensions.yaml
-  version: 0.1.0
+  version: 0.2.0

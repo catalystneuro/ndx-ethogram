@@ -20,10 +20,13 @@ load_namespaces(str(__spec_path))
 EthogramBouts = get_class("EthogramBouts", "ndx-ethogram")
 # Ethogram: a DynamicTable; one row per behavior type (the catalogue / coding scheme).
 Ethogram = get_class("Ethogram", "ndx-ethogram")
+# EthogramEvents: an EventsTable subclass; one row per scored occurrence (the record of a scoring).
+EthogramEvents = get_class("EthogramEvents", "ndx-ethogram")
 
 __all__ = [
     "EthogramBouts",
     "Ethogram",
+    "EthogramEvents",
 ]
 
 # Remove these functions/modules from the package
