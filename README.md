@@ -51,6 +51,7 @@ the catalogue's `behavior` column.
 | `modifiers` | ragged column (text) | no | the behavior's modifier slots, each named after the `EthogramEvents` column its answers go to |
 | `modifier_values` | doubly ragged column (text) | no | the menu of values each slot offers, empty for a free answer |
 | `excludes` | ragged column (text) | no | behaviors that starting this one terminates |
+| `exclusive` | attribute (boolean) | no | deprecated, removed in 0.3.0; use `bout_concurrency` on `EthogramBouts` |
 
 ## EthogramBouts
 

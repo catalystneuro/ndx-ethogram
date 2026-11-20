@@ -274,6 +274,17 @@ def main():
             "Holds per-type, occurrence-invariant metadata the per-bout table cannot: the complete "
             "repertoire, the state/point kind, the tool's native code, and the hierarchy grouping."
         ),
+        attributes=[
+            NWBAttributeSpec(
+                name="exclusive",
+                dtype="bool",
+                required=False,
+                doc=(
+                    "Deprecated in 0.2.0 and removed in 0.3.0: use `bout_concurrency` on EthogramBouts. True "
+                    "if the scheme is a single-label partition, False if behaviors can co-occur."
+                ),
+            ),
+        ],
         datasets=[
             NWBDatasetSpec(
                 name="behavior",

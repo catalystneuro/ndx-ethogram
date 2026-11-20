@@ -170,3 +170,16 @@ def test_modifiers_and_excludes_roundtrip(tmp_path):
         assert [list(values) for values in rb["modifier_values"][2]] == [[]]
         assert list(rb["excludes"][0]) == ["standing", "grooming"]
         assert list(rb["excludes"][2]) == []
+
+
+def test_deprecated_exclusive_roundtrip(tmp_path):
+    """`exclusive` is still accepted in 0.2.0, so writers that set it keep working until 0.3.0."""
+    nwbfile = mock_NWBFile()
+    eg = Ethogram(name="ethogram", description="behavior catalogue", exclusive=True)
+    eg.add_row(behavior="0", definition="locomotion")
+    nwbfile.create_processing_module("behavior", "behavior").add(eg)
+    path = str(tmp_path / "eg.nwb")
+
+    write_nwb(nwbfile, path)
+    with NWBHDF5IO(path, mode="r", load_namespaces=True) as io:
+        assert io.read().processing["behavior"]["ethogram"].exclusive
