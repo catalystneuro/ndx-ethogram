@@ -98,7 +98,9 @@ row per scored occurrence. Each row has the inherited `timestamp` (the onset) an
 `duration`: the length of a closed state, `NaN` for a point behavior or for a state
 that never closed. The linked catalogue's `behavior_type` tells the two `NaN` cases
 apart, which is why the `ethogram` link is required here. A coder's free-text
-comment goes in the inherited `annotation` column.
+comment goes in the inherited `annotation` column. Like any `EventsTable`, it goes in
+`nwbfile.events` (`nwbfile.add_events_table(events)`), while its catalogue and any
+bouts derived from it go in the `behavior` processing module.
 
 | Field | Kind | Required | Meaning |
 |---|---|---|---|

@@ -100,13 +100,13 @@ def test_roundtrip(tmp_path):
     events = make_events(catalogue)
     behavior_module = nwbfile.create_processing_module("behavior", "behavior")
     behavior_module.add(catalogue)
-    behavior_module.add(events)
+    nwbfile.add_events_table(events)
     path = str(tmp_path / "events.nwb")
 
     write_nwb(nwbfile, path)
     assert validate(path=path) == []
     with NWBHDF5IO(path, mode="r") as io:
-        read_events = io.read().processing["behavior"]["scoring"]
+        read_events = io.read().events["scoring"]
         assert type(read_events).__name__ == "EthogramEvents"
         assert read_events.labeling_method == "manual"
         assert read_events.source_software == "BORIS 8.27"
@@ -130,12 +130,12 @@ def test_nan_duration_is_resolved_by_the_catalogue(tmp_path):
     events = make_events(catalogue)
     behavior_module = nwbfile.create_processing_module("behavior", "behavior")
     behavior_module.add(catalogue)
-    behavior_module.add(events)
+    nwbfile.add_events_table(events)
     path = str(tmp_path / "events.nwb")
 
     write_nwb(nwbfile, path)
     with NWBHDF5IO(path, mode="r") as io:
-        read_events = io.read().processing["behavior"]["scoring"]
+        read_events = io.read().events["scoring"]
         read_catalogue = read_events.ethogram
         behavior_type = dict(zip(read_catalogue["behavior"][:], read_catalogue["behavior_type"][:]))
         nan_labels = [
@@ -157,13 +157,13 @@ def test_observation_intervals_tagged_by_subject_roundtrip(tmp_path):
     behavior_module = nwbfile.create_processing_module("behavior", "behavior")
     behavior_module.add(catalogue)
     behavior_module.add(coverage)
-    behavior_module.add(events)
+    nwbfile.add_events_table(events)
     path = str(tmp_path / "events.nwb")
 
     write_nwb(nwbfile, path)
     assert validate(path=path) == []
     with NWBHDF5IO(path, mode="r") as io:
-        read_coverage = io.read().processing["behavior"]["scoring"].observation_intervals
+        read_coverage = io.read().events["scoring"].observation_intervals
         assert list(read_coverage["subject"][:]) == ["mouse_1", "mouse_2"]
 
 
@@ -183,7 +183,7 @@ def test_bouts_derived_from_events_roundtrip(tmp_path):
     bouts.add_row(start_time=1.0, stop_time=3.0, label="walking")
     behavior_module = nwbfile.create_processing_module("behavior", "behavior")
     behavior_module.add(catalogue)
-    behavior_module.add(events)
+    nwbfile.add_events_table(events)
     behavior_module.add(bouts)
     path = str(tmp_path / "events.nwb")
 
