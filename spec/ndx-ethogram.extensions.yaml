@@ -3,18 +3,16 @@ groups:
   neurodata_type_inc: DynamicTable
   doc: "The behavior catalogue / coding scheme (the classical ethogram): one row per
     behavior TYPE, including types that did not occur this session (the full output
-    space). A standalone DynamicTable that EthogramBouts (and a future point-behavior
-    EthogramEvents) reference via their optional `ethogram` link; a bout's text `label`
-    matches this table's `name` column. Holds per-type, occurrence-invariant metadata
-    the per-bout table cannot: the complete repertoire, the state/point kind, the
-    tool's native code, and the hierarchy grouping."
+    space). A standalone DynamicTable that EthogramBouts and EthogramEvents reference
+    via their `ethogram` link; a row's text `label` matches this table's `behavior`
+    column. Holds per-type, occurrence-invariant metadata the per-bout table cannot:
+    the complete repertoire, the state/point kind, the tool's native code, and the
+    hierarchy grouping."
   attributes:
   - name: exclusive
     dtype: bool
-    doc: True if the scheme is a single-label partition (mutually exclusive 
-      behaviors, e.g. VAME motifs, keypoint-MoSeq syllables, CalMS21); False if 
-      independent multi-label behaviors can co-occur (DeepEthogram, SimBA). 
-      Tells a consumer whether overlapping EthogramBouts rows are expected.
+    doc: 'Deprecated in 0.2.0 and removed in 0.3.0: use `bout_concurrency` on EthogramBouts.
+      True if the scheme is a single-label partition, False if behaviors can co-occur.'
     required: false
   datasets:
   - name: behavior
@@ -35,8 +33,9 @@ groups:
   - name: behavior_type
     neurodata_type_inc: VectorData
     dtype: text
-    doc: "'state' (durative -> EthogramBouts) or 'point' (instantaneous -> a future
-      EthogramEvents). Optional; all current pose-segmentation tools emit only 'state'."
+    doc: "'state' (durative) or 'point' (instantaneous). Optional, except when an
+      EthogramEvents links this catalogue: a NaN duration there marks either a point
+      behavior or a state that never closed, and only this column tells them apart."
     quantity: '?'
   - name: native_code
     neurodata_type_inc: VectorData
@@ -52,6 +51,110 @@ groups:
       behavioral category). The normalized home of the motif->community mapping.
       Optional.
     quantity: '?'
+  - name: modifiers
+    neurodata_type_inc: VectorData
+    dtype: text
+    doc: 'The modifier slots of each behavior: for each slot, the name of the EthogramEvents
+      column its answers are written to. Ragged, empty for a behavior with no modifiers.
+      Optional.'
+    quantity: '?'
+  - name: modifiers_index
+    neurodata_type_inc: VectorIndex
+    doc: Index into `modifiers`, one entry per behavior.
+    quantity: '?'
+  - name: modifier_values
+    neurodata_type_inc: VectorData
+    dtype: text
+    doc: 'The menu of values each slot in `modifiers` offers, in the same order. Doubly
+      ragged: a list of values per slot, a list of slots per behavior. Empty for a
+      slot with no menu, such as a free-text or numeric answer. Optional.'
+    quantity: '?'
+  - name: modifier_values_index
+    neurodata_type_inc: VectorIndex
+    doc: Index into `modifier_values`, one entry per modifier slot.
+    quantity: '?'
+  - name: modifier_values_index_index
+    neurodata_type_inc: VectorIndex
+    doc: Index into `modifier_values_index`, one entry per behavior.
+    quantity: '?'
+  - name: excludes
+    neurodata_type_inc: VectorData
+    dtype: text
+    doc: The behaviors that starting this behavior terminates, as values of this
+      table's `behavior` column (a BORIS exclusion matrix; members of an 
+      EthoVision mutually exclusive group each exclude the others). Ragged, 
+      empty for a behavior that terminates none. Optional.
+    quantity: '?'
+  - name: excludes_index
+    neurodata_type_inc: VectorIndex
+    doc: Index into `excludes`, one entry per behavior.
+    quantity: '?'
+- neurodata_type_def: EthogramEvents
+  neurodata_type_inc: EventsTable
+  doc: "The record of a behavioral scoring: one row per scored occurrence, drawn from
+    an Ethogram catalogue. Holds point behaviors, closed state occurrences and state
+    occurrences that never closed. Each row has the inherited `timestamp` (the onset)
+    and `duration`: the length of a closed state occurrence, NaN for a point behavior
+    or a state that never closed. The linked catalogue's `behavior_type` tells the
+    two NaN cases apart. A coder's free-text comment on an occurrence goes in the
+    inherited `annotation` column. One table holds every behavior of one coding scheme,
+    since all its rows share the same columns. Modifiers, the answers a coder records
+    with an occurrence, go in one ragged text column per modifier slot, named by the
+    producer; the catalogue's `modifiers` column says which of them a behavior writes
+    into. When an occurrence closes with different answers or a different comment
+    than it opened with, the closing ones go in a column of the same name prefixed
+    `stop_` (for example `stop_annotation`), written only when some occurrence in
+    the table changed."
+  attributes:
+  - name: labeling_method
+    dtype: text
+    doc: "How the occurrences were produced: 'manual' (a human scored the video),
+      'automated' (an algorithm), or 'curated' (human-reviewed model output)."
+  - name: source_software
+    dtype: text
+    doc: Producing tool and version, e.g. 'BORIS 8.27'.
+    required: false
+  - name: annotator
+    dtype: text
+    doc: The human or lab who scored the occurrences.
+    required: false
+  - name: parameters
+    dtype: text
+    doc: 'Optional JSON-encoded provenance: settings of the producing tool.'
+    required: false
+  datasets:
+  - name: label
+    neurodata_type_inc: VectorData
+    dtype: text
+    doc: The behavior of each occurrence (required); matches a row of the 
+      catalogue's `behavior` column.
+  - name: subject
+    neurodata_type_inc: VectorData
+    dtype: text
+    doc: Who the occurrence is attributed to, for scorings of several subjects. 
+      An empty string means the coder attributed the occurrence to no subject.
+    quantity: '?'
+  links:
+  - name: ethogram
+    target_type: Ethogram
+    doc: The behavior catalogue (coding scheme) the occurrences draw their 
+      labels from (required). Its `behavior_type` column must be filled, since 
+      it is what tells a point behavior from a state that never closed.
+  - name: source_video
+    target_type: ImageSeries
+    doc: The behavioral video the occurrences were scored on.
+    quantity: '?'
+  - name: observation_intervals
+    target_type: TimeIntervals
+    doc: Spans over which the labels were assessed (partial-annotation inputs 
+      only). Within them, absence of an occurrence means the behavior was 
+      absent; outside, unobserved. Omitted means assessed throughout (full 
+      coverage). A plain core TimeIntervals; not invalid_times. When coverage 
+      differs by subject or by behavior (focal sampling, a behavior scored in 
+      part of the session), each row of the linked TimeIntervals is tagged with 
+      a `subject` or a `label` column; a row without the column covers every 
+      subject and every behavior.
+    quantity: '?'
 - neurodata_type_def: EthogramBouts
   neurodata_type_inc: TimeIntervals
   doc: "A curated, tool-agnostic ethogram stored as labeled behavioral bouts: one
@@ -61,7 +164,9 @@ groups:
     B-SOiD clusters, DeepEthogram/SimBA behaviors); the tool's faithful native output
     lives in its own extension and is referenced via the generic `source` link. Overlapping
     behaviors are overlapping rows. Holds only durative (state) behaviors; instantaneous
-    point behaviors belong in an EventsTable."
+    point behaviors belong in an EthogramEvents. A table with a `source_events` link
+    is a view of the closed state occurrences of that EthogramEvents record, so a
+    reader counts one table or the other, not both."
   attributes:
   - name: labeling_method
     dtype: text
@@ -81,6 +186,15 @@ groups:
     dtype: text
     doc: 'Optional JSON-encoded provenance: key hyperparameters (n_cluster, time_window,
       kappa, ...).'
+    required: false
+  - name: bout_concurrency
+    dtype: text
+    doc: "How bouts of one subject relate in time. 'partition': one bout at every
+      observed instant, so the bouts tile the observed time (VAME motifs, keypoint-MoSeq
+      syllables, B-SOiD groups, CalMS21). 'disjoint': never more than one bout at
+      once, gaps allowed. 'concurrent': bouts may overlap (DeepEthogram, SimBA, most
+      manual coding schemes). Absent means unknown. Holds per subject: bouts of different
+      subjects may always overlap."
     required: false
   datasets:
   - name: label
@@ -114,7 +228,17 @@ groups:
     doc: Spans over which the labels were assessed (partial-annotation inputs 
       only). Within them, absence of a bout means the behavior was absent; 
       outside, unobserved. Omitted means assessed throughout (full coverage). A 
-      plain core TimeIntervals; not invalid_times.
+      plain core TimeIntervals; not invalid_times. When coverage differs by 
+      subject or by behavior (focal sampling, a behavior scored in part of the 
+      session), each row of the linked TimeIntervals is tagged with a `subject` 
+      or a `label` column; a row without the column covers every subject and 
+      every behavior.
+    quantity: '?'
+  - name: source_events
+    target_type: EthogramEvents
+    doc: 'The EthogramEvents record these bouts were derived from, for a manual scoring
+      whose closed state occurrences are also written as bouts. The bouts are then
+      a view of that record: count one table or the other, not both.'
     quantity: '?'
   - name: ethogram
     target_type: Ethogram

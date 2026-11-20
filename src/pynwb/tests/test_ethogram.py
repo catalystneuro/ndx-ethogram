@@ -6,13 +6,13 @@ from pynwb.testing.mock.file import mock_NWBFile
 from ndx_ethogram import Ethogram, EthogramBouts
 
 
-def make_ethogram(name="ethogram", exclusive=True, with_optional=True):
+def make_ethogram(name="ethogram", with_optional=True):
     """A small behavior catalogue, optionally with native_code + category columns.
 
     Key columns are `behavior` and `definition` (not `name`/`description`, which are
     reserved DynamicTable attributes).
     """
-    eg = Ethogram(name=name, description="behavior catalogue (coding scheme)", exclusive=exclusive)
+    eg = Ethogram(name=name, description="behavior catalogue (coding scheme)")
     rows = [
         ("0", "locomotion"),
         ("1", "grooming"),
@@ -35,7 +35,6 @@ def write_nwb(nwbfile, path):
 def test_ethogram_constructor():
     eg = make_ethogram()
     assert eg.name == "ethogram"
-    assert eg.exclusive  # single-label partition
     assert len(eg) == 3
     assert list(eg["behavior"][:]) == ["0", "1", "2"]
     assert list(eg["definition"][:]) == ["locomotion", "grooming", "rearing"]
@@ -51,7 +50,7 @@ def test_ethogram_minimal_columns():
 
 def test_ethogram_roundtrip(tmp_path):
     nwbfile = mock_NWBFile()
-    eg = make_ethogram(exclusive=False)
+    eg = make_ethogram()
     nwbfile.create_processing_module("behavior", "behavior").add(eg)
     path = str(tmp_path / "eg.nwb")
 
@@ -59,7 +58,6 @@ def test_ethogram_roundtrip(tmp_path):
     with NWBHDF5IO(path, mode="r", load_namespaces=True) as io:
         rb = io.read().processing["behavior"]["ethogram"]
         assert type(rb).__name__ == "Ethogram"
-        assert not rb.exclusive  # multi-label scheme
         assert list(rb["behavior"][:]) == ["0", "1", "2"]
         assert [int(x) for x in rb["native_code"][:]] == [0, 1, 2]
         assert list(rb["category"][:]) == ["0", "1", "0"]
@@ -89,7 +87,7 @@ def test_ethogram_link_roundtrip(tmp_path):
 def test_full_output_space_includes_unobserved(tmp_path):
     """The catalogue holds behaviors that never occur in the bouts (the full output space)."""
     nwbfile = mock_NWBFile()
-    eg = Ethogram(name="ethogram", description="full scheme", exclusive=True)
+    eg = Ethogram(name="ethogram", description="full scheme")
     for code, behavior in enumerate(["attack", "investigation", "mount", "other"]):
         eg.add_row(behavior=behavior, definition="", native_code=code)
     bouts = EthogramBouts(name="CalMS21", description="annotation", labeling_method="manual")
@@ -133,3 +131,55 @@ def test_shared_catalogue_roundtrip(tmp_path):
         assert read["VAME_communities"].ethogram is not None
         # both links resolve to the single stored catalogue
         assert read["VAME_motifs"].ethogram.name == read["VAME_communities"].ethogram.name == "ethogram"
+
+
+def test_modifiers_and_excludes_roundtrip(tmp_path):
+    """The modifier slots, the menu each offers, and the behaviors each one terminates round-trip."""
+    nwbfile = mock_NWBFile()
+    eg = Ethogram(name="ethogram", description="manual coding scheme")
+    eg.add_row(
+        behavior="walking",
+        definition="The subject moves forward on all four paws.",
+        modifiers=["walking_speed", "walking_direction"],
+        modifier_values=[["slow", "fast"], ["left", "right"]],
+        excludes=["standing", "grooming"],
+    )
+    eg.add_row(
+        behavior="standing",
+        definition="The subject stays still on all four paws.",
+        modifiers=[],
+        modifier_values=[],
+        excludes=["walking"],
+    )
+    eg.add_row(
+        behavior="grooming",
+        definition="The subject cleans its fur.",
+        modifiers=["grooming_count"],
+        modifier_values=[[]],  # a free numeric answer has no menu
+        excludes=[],
+    )
+    nwbfile.create_processing_module("behavior", "behavior").add(eg)
+    path = str(tmp_path / "eg.nwb")
+
+    write_nwb(nwbfile, path)
+    with NWBHDF5IO(path, mode="r", load_namespaces=True) as io:
+        rb = io.read().processing["behavior"]["ethogram"]
+        assert list(rb["modifiers"][0]) == ["walking_speed", "walking_direction"]
+        assert list(rb["modifiers"][1]) == []
+        assert [list(values) for values in rb["modifier_values"][0]] == [["slow", "fast"], ["left", "right"]]
+        assert [list(values) for values in rb["modifier_values"][2]] == [[]]
+        assert list(rb["excludes"][0]) == ["standing", "grooming"]
+        assert list(rb["excludes"][2]) == []
+
+
+def test_deprecated_exclusive_roundtrip(tmp_path):
+    """`exclusive` is still accepted in 0.2.0, so writers that set it keep working until 0.3.0."""
+    nwbfile = mock_NWBFile()
+    eg = Ethogram(name="ethogram", description="behavior catalogue", exclusive=True)
+    eg.add_row(behavior="0", definition="locomotion")
+    nwbfile.create_processing_module("behavior", "behavior").add(eg)
+    path = str(tmp_path / "eg.nwb")
+
+    write_nwb(nwbfile, path)
+    with NWBHDF5IO(path, mode="r", load_namespaces=True) as io:
+        assert io.read().processing["behavior"]["ethogram"].exclusive

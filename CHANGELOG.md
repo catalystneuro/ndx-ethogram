@@ -1,5 +1,20 @@
 # Changelog for ndx-ethogram
 
+## 0.2.0 (unreleased)
+
+- New `EthogramEvents` type, a subclass of the core `EventsTable`, for the record of a
+  scoring: one row per scored occurrence (point behaviors, closed states, and states
+  that never closed), with a required `label`, an optional `subject`, comments in the
+  inherited `annotation` column, a required `ethogram` link, and the provenance
+  attributes and `source_video` and `observation_intervals` links of `EthogramBouts`.
+- `EthogramBouts` gains a `source_events` link to the `EthogramEvents` it was derived
+  from, and a `bout_concurrency` attribute (`partition`, `disjoint`, or `concurrent`)
+  that replaces the catalogue's `exclusive`.
+- `Ethogram` gains optional `modifiers`, `modifier_values`, and `excludes` columns. Its
+  `exclusive` attribute is deprecated and will be removed in 0.3.0, so that released
+  neuroconv versions, which set it, keep working with 0.2.0.
+- Requires `pynwb>=4.2.0`, the first release with the core `EventsTable`.
+
 ## 0.1.0 (unreleased)
 
 - `EthogramBouts` carries a single required text `label` column (a behavior name where
