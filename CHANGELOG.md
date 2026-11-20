@@ -1,6 +1,6 @@
 # Changelog for ndx-ethogram
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-11-20)
 
 - New `EthogramEvents` type, a subclass of the core `EventsTable`, for the record of a
   scoring: one row per scored occurrence (point behaviors, closed states, and states
@@ -15,7 +15,7 @@
   neuroconv versions, which set it, keep working with 0.2.0.
 - Requires `pynwb>=4.2.0`, the first release with the core `EventsTable`.
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-06-24)
 
 - `EthogramBouts` carries a single required text `label` column (a behavior name where
   one exists, the tool's own cluster/motif id rendered as text such as "7" otherwise).
